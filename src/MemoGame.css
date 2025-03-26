@@ -9,15 +9,15 @@
 
 .memo-game {
     display: grid;
-    grid-template-columns: repeat(4, 120px);
+    grid-template-columns: repeat(4, 80px);
     gap: 10px;
     justify-content: center;
 }
 
 .card {
     cursor: pointer;
-    width: 120px;
-    height: 120px;
+    width: 80px;
+    height: 80px;
     position: relative;
     perspective: 1000px;
 }
