@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
+import eslint from 'vite-plugin-eslint'
 // https://vitejs.dev/config/
 
 export default ({ mode }: { mode: string }) => {
@@ -8,6 +9,13 @@ export default ({ mode }: { mode: string }) => {
 
 	return defineConfig({
 		base: process.env.VITE_BASE_PATH,
-		plugins: [react(), tsconfigPaths()],
+		plugins: [
+			react(),
+			tsconfigPaths(),
+			eslint({
+				throwOnError: false,
+				throwOnWarning: false,
+			}),
+		],
 	})
 }
