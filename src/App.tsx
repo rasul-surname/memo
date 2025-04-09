@@ -1,153 +1,137 @@
 import { useEffect, useState } from 'react'
-import './MemoGame.css'
+import { Box, Container } from '@chakra-ui/react'
+import { cards as initialCards } from '@/src/constants/cards.tsx'
+import { generateShuffledCards } from '@/src/utils/generateShuffledCards.ts'
+import { CardProps } from '@/src/types/Card.ts'
+import StartGameModal from '@/src/components/modal/StartGameModal.tsx'
+import Timer from '@/src/components/base/Timer.tsx'
+import Board from '@/src/components/Board.tsx'
+import GameInfo from '@/src/components/GameInfo.tsx'
+import { sendScore } from '@/src/utils/sendScore.ts'
 
-type Card = {
-	id: number
-	emoji: string
-	flipped: boolean
-	matched: boolean
-}
-
-const levels = [
-	{ rows: 2, cols: 3 },
-	{ rows: 3, cols: 4 },
-	{ rows: 4, cols: 4 }
-]
-
-const cardsArray: string[] = ['🚇', '🚉', '🚦', '🚧', '🚏', '🚥', '🚊', '⚠️']
-const generateShuffledCards = (rows: number, cols: number): Card[] => {
-	const totalPairs = (rows * cols) / 2
-	const selectedEmojis = cardsArray.slice(0, totalPairs)
-
-	return [...selectedEmojis, ...selectedEmojis]
-		.sort(() => Math.random() - 0.5)
-		.map((emoji, index) => ({ id: index, emoji, flipped: false, matched: false }))
-}
+const GAME_TIME_LIMIT = 50
+const TOTAL_LEVELS = 8
 
 function App() {
-	const [cards, setCards] = useState<Card[]>([])
+	const [level, setLevel] = useState(1)
+	const [cards, setCards] = useState<CardProps[]>(generateShuffledCards(initialCards))
 	const [flippedCards, setFlippedCards] = useState<number[]>([])
-	const [isGameStarted, setIsGameStarted] = useState<boolean>(false)
-	const [score, setScore] = useState<number>(0)
-	const [timer, setTimer] = useState<number>(20)
-	const [levelIndex, setLevelIndex] = useState<number>(0)
-
-	useEffect(() => {
-		if (isGameStarted) {
-			const { rows, cols } = levels[levelIndex]
-			setCards(generateShuffledCards(rows, cols))
-		}
-	}, [isGameStarted, levelIndex])
+	const [isGameStarted, setIsGameStarted] = useState(false)
+	const [score, setScore] = useState(0)
+	const [timer, setTimer] = useState(GAME_TIME_LIMIT)
+	const [isBusy, setIsBusy] = useState(false)
 
 	useEffect(() => {
 		if (isGameStarted && timer > 0) {
-			const timer = setInterval(() => {
-				setTimer((prev: number) => prev - 1)
-			}, 1000)
+			const timer = setInterval(() => setTimer((prev) => prev - 1), 1000)
 
 			return () => clearInterval(timer)
 		} else if (timer === 0) {
-			console.log('отправлен запрос')
-			sendScore()
+			sendScore(10)
 			setIsGameStarted(false)
 		}
 	}, [isGameStarted, timer])
 
 	useEffect(() => {
-		if (cards.length > 0 && cards.every(card => card.matched)) {
-			if (levelIndex < levels.length - 1) {
-				setLevelIndex(prev => prev + 1)
+		const isWin = cards.every((card) => card.matched)
+
+		if (isWin) {
+			if (level < TOTAL_LEVELS) {
+				setLevel((prev) => prev + 1)
 				setIsGameStarted(true)
-				setTimer(20)
+				setTimer(GAME_TIME_LIMIT)
 			} else {
 				console.log('последний уровень пройден')
 				setIsGameStarted(false)
-				// sendScore()
+				sendScore(score)
 			}
 		}
-	}, [cards])
+	}, [cards, level, score])
 
 	const handleCardClick = (id: number): void => {
-		if (!isGameStarted) return
+		if (isBusy) return
+		if (cards.find((card) => card.id === id)?.flipped) return
 
-		if (flippedCards.length === 2 || cards.find(card => card.id === id)?.flipped) return
-
-
-		const newCards = cards.map(card => card.id === id ? { ...card, flipped: true } : card)
+		const newCards = cards.map((card) => (card.id === id ? { ...card, flipped: true } : card))
 		setCards(newCards)
-		setFlippedCards([...flippedCards, id])
 
-		if (flippedCards.length === 1) {
-			const firstCard = cards.find(card => card.id === flippedCards[0])
-			const secondCard = newCards.find(card => card.id === id)
+		if (flippedCards.length === 0) {
+			setFlippedCards([...flippedCards, id])
+		} else if (flippedCards.length === 1) {
+			const [firstId] = flippedCards
 
-			if (firstCard && secondCard && firstCard.emoji === secondCard.emoji) {
-				setTimeout(() => {
-					setCards(prevCards => prevCards.map(card =>
-						card.emoji === firstCard.emoji ? { ...card, matched: true } : card
-					))
-					setScore((prevScore) => prevScore + 10)
-					setFlippedCards([])
-				}, 500)
+			const firstCard = cards.find((card) => card.id === firstId)
+			const secondCard = cards.find((card) => card.id === id)
+
+			if (!firstCard || !secondCard) return
+
+			setIsBusy(true)
+
+			if (firstCard.emoji === secondCard.emoji) {
+				setCards((prevCards) => prevCards.map((card) => (card.emoji === firstCard.emoji ? { ...card, matched: true } : card)))
+				setScore((prevScore) => prevScore + 10)
+				setFlippedCards([])
+				setIsBusy(false)
 			} else {
 				setTimeout(() => {
-					setCards(prevCards => prevCards.map(card =>
-						flippedCards.includes(card.id) || card.id === id ? { ...card, flipped: false } : card
-					))
-
+					setCards((prevCards) => prevCards.map((card) => ({ ...card, flipped: false })))
 					setFlippedCards([])
-				}, 1000)
+					setIsBusy(false)
+				}, 500)
 			}
 		}
-	}
-
-	const sendScore = (): void => {
-		fetch('/api/score', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ score })
-		}).catch(err => console.error('Ошибка отправки счёта:', err))
 	}
 
 	const handleGameStart = () => {
 		setIsGameStarted(true)
-		setTimer(20)
+		setTimer(GAME_TIME_LIMIT)
 		setScore(0)
-		setLevelIndex(0)
+		setLevel(1)
 	}
 
 	return (
-		<div className="wrapper">
-			{!isGameStarted ? (
-				<button className="button-restart" onClick={handleGameStart}>
-					НАЧАТЬ ИГРУ
-				</button>
-			) : (
-				<>
-					<div className="game-info">
-						<div className="level">Уровень: {levelIndex + 1} / {levels.length}</div>
-						<div className="timer">⏳ {timer}</div>
-						<div className="score">Очки: {score}</div>
-					</div>
-					<div className="memo-game"
-						 style={{ gridTemplateColumns: `repeat(${levels[levelIndex].cols}, 80px)` }}>
-						{cards.map(card => (
-							<div
-								key={card.id}
-								className={`card ${card.flipped || card.matched ? 'flipped' : ''}`}
-								onClick={() => handleCardClick(card.id)}
-							>
-								<div className="card-inner">
-									<div className="card-front"></div>
-									<div className="card-back">{card.emoji}</div>
-								</div>
-							</div>
-						))}
-					</div>
-				</>
-			)}
-		</div>
+		<Box {...styles.wrapper}>
+			<Container variant="limit">
+				<Timer value={timer} />
+			</Container>
+			<StartGameModal
+				open={!isGameStarted}
+				handleGameStart={handleGameStart}
+			/>
+			<Board
+				cards={cards}
+				handleCardClick={handleCardClick}
+			/>
+			<Box
+				css={{
+					w: 'full',
+					bg: 'white',
+					py: '2.4rem',
+					rounded: '1.6rem 1.6rem 0 0',
+				}}
+			>
+				<Container variant="limit">
+					<GameInfo
+						level={level}
+						openedCards={cards.filter((card) => card.matched).length / 2}
+						totalCards={cards.length / 2}
+					/>
+				</Container>
+			</Box>
+		</Box>
 	)
+}
+
+const styles = {
+	wrapper: {
+		display: 'flex',
+		flexDirection: 'column',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		h: '100svh',
+		pt: '3rem',
+		bg: 'linear-gradient(180deg, rgba(255, 95, 73, 0.84) 0%, rgba(247, 138, 59, 0.32) 38%, rgba(247, 138, 59, 0) 100%)',
+	},
 }
 
 export default App
