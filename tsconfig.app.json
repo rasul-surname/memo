@@ -19,10 +19,12 @@
     "noUncheckedSideEffectImports": false,
 
     /* Paths */
-    "baseUrl": ".",
+//    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx"]
+//  "include": [
+//    "src"
+//  ]
 }

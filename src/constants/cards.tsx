@@ -5,19 +5,19 @@ const imageWidth = '60px'
 
 export const cards: ReactNode[] = [
 	<Image
-		src="../public/imgs/metro.png"
+		src="/imgs/metro.png"
 		maxWidth={imageWidth}
 	/>,
 	<Image
-		src="../public/imgs/rechka.png"
+		src="/imgs/rechka.png"
 		maxWidth={imageWidth}
 	/>,
 	<Image
-		src="../public/imgs/electrobus.png"
+		src="/imgs/electrobus.png"
 		maxWidth={imageWidth}
 	/>,
 	<Image
-		src="../public/imgs/slon.png"
+		src="/imgs/slon.png"
 		maxWidth={imageWidth}
 	/>,
 	<Image
