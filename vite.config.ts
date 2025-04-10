@@ -7,6 +7,11 @@ export default ({ mode }: { mode: any }) => {
 
 	return defineConfig({
 		base: process.env.VITE_BASE_PATH,
-		plugins: [react(), tsconfigPaths()]
+		plugins: [react(), tsconfigPaths()],
+		resolve: {
+			alias: {
+				"@/*": "./*"
+			},
+		},
 	})
 }
