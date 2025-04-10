@@ -1,21 +1,12 @@
 import { defineConfig, loadEnv } from 'vite'
-import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import eslint from 'vite-plugin-eslint'
-// https://vitejs.dev/config/
+import react from '@vitejs/plugin-react'
 
-export default ({ mode }: { mode: string }) => {
+export default ({ mode }: { mode: any }) => {
 	process.env = { ...process.env, ...loadEnv(mode, process.cwd()) }
 
 	return defineConfig({
 		base: process.env.VITE_BASE_PATH,
-		plugins: [
-			react(),
-			tsconfigPaths(),
-			eslint({
-				throwOnError: false,
-				throwOnWarning: false,
-			}),
-		],
+		plugins: [react(), tsconfigPaths()]
 	})
 }

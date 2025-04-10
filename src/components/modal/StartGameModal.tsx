@@ -1,6 +1,6 @@
 import { Button, Dialog, DialogRootProps, Portal, Text, VStack } from '@chakra-ui/react'
 
-interface StartGameModalProps extends DialogRootProps {
+interface StartGameModalProps extends Omit<DialogRootProps, 'children'> {
 	handleGameStart: () => void
 }
 
